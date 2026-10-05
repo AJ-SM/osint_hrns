@@ -1,6 +1,7 @@
 import os 
 from dotenv import load_dotenv
 from google import genai
+import json 
 from openai import OpenAI
 
 load_dotenv()
@@ -265,6 +266,7 @@ Use this schema:
 
 {
   "research_objective": "...",
+  
   "research_depth": "quick | standard | deep",
   "scope": {
     "time_range": "...",
@@ -275,6 +277,7 @@ Use this schema:
   "research_tasks": [
     {
       "id": "task_001",
+      "keyword":[],
       "objective": "...",
       "claim_to_verify": "...",
       "claim_type": "factual | comparative | quantitative | temporal | interpretive",
@@ -351,7 +354,7 @@ class Planner:
                 )
             
             chat =self.res.choices[0].message.content
-            return chat
+            return json.loads(chat)
         except Exception as e : 
             print("error happen", e)
 
@@ -359,4 +362,7 @@ class Planner:
 
 if __name__ ==  "__main__":
     inst=Planner()
-    print(inst.paln(test_query))
+    res=inst.paln(test_query)
+    data = (res)
+    print(type(data))
+    print(data)

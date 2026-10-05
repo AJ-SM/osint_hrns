@@ -1,13 +1,12 @@
 from scripts.Engine_search import Search
 from scripts.planner import Planner
-
-
+from scripts.evidence.fetcher import collect
 
 
 
 ip_query = input("Enter your target word : ")
-engine = Search(ip_query,20)
-res = engine.ddg()
-for i,seraches in enumerate(res):
-    print(f"Search Results :{i} =  ", seraches['href'])
+collectr = collect(search=Search,planner=Planner,query=ip_query)
+print(collectr.searcher())
+
+
 

@@ -29,7 +29,7 @@ class Search:
             print("Error Occured ") 
             print('Code', e.code)
             print('Reason ', e.reason)
-    
+        pass 
     def ddg(self):
         with DDGS() as ddgs:
             results = list(ddgs.text(self.query, max_results=self.n_results))
@@ -39,11 +39,45 @@ class Search:
             return self.res
             
     
-    def parser(self,res):
-        soup = BeautifulSoup(res, 'html.parser') 
-        print(soup)
-        for result in soup.select("div.MjjYud"):
-            print(result.get_text(" ", strip=True))
+    def parse(self,res):
+        self.soup = BeautifulSoup(res, "html.parser")
+        print(self.soup)
+        results = []
+
+        for result in self.soup.select("div.MjjYud"):
+           
+            title_tag = result.select_one("h3")
+
+            if not title_tag:
+                continue
+
+            title = title_tag.get_text(" ", strip=True)
+
+            link_tag = title_tag.find_parent("a")
+
+            if not link_tag:
+                continue
+
+            url = link_tag.get("href")
+
+            description_tag = result.select_one(
+                "div.VwiC3b"
+            )
+
+            description = (
+                description_tag.get_text(" ", strip=True)
+                if description_tag
+                else ""
+            )
+            print(description)
+
+            results.append({
+                "title": title,
+                "url": url,
+                "description": description
+            })
+        pass 
+        return results
         
     
     def google_ran(self):
@@ -75,6 +109,8 @@ if __name__=="__main__":
     print("Running in debug mode \n")
     gggl = Search(pry,1)
     res = gggl.google_ran()
-    gggl.parser(res=res)
+    # print(res)
+    parsed = gggl.parse(res=res)
+    print(parsed)
     # sg = Search(pry,1)
     # print(sg.ddg())
