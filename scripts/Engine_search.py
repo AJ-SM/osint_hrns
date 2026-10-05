@@ -34,8 +34,9 @@ class Search:
         with DDGS() as ddgs:
             results = list(ddgs.text(self.query, max_results=self.n_results))
             self.res = results
-            for r in results:    
-                print(r['title'], r['href'])
+            # for r in results:    
+            #     print(r['title'], r['href'])
+            return self.res
             
     
     def parser(self,res):
