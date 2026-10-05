@@ -1,7 +1,9 @@
 from googlesearch import search
 import requests
-from ddgs import DDGS 
+from ddgs import DDGS
+import warnings 
 import time 
+
 from bs4 import BeautifulSoup
 from urllib.error import HTTPError
 
@@ -13,7 +15,12 @@ class Search:
         self.lang = lang
         self.res = []
 
+
+
+    
     def google(self):
+        warnings.warn(" You will get the error page don't use its redundent ")
+        return 
         try:
             print(search.__module__)
             results = search(
@@ -81,6 +88,8 @@ class Search:
         
     
     def google_ran(self):
+        warnings.warn(" You will get the error page don't use its redundent ")
+       
         url = "https://www.google.com/search"
 
         params = {
