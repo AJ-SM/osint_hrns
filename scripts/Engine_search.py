@@ -38,17 +38,20 @@ class Search:
             print('Reason ', e.reason)
         pass 
     def ddg(self):
-        with DDGS() as ddgs:
-            results = list(ddgs.text(self.query, max_results=self.n_results))
-            self.res = results
-            # for r in results:    
-            #     print(r['title'], r['href'])
-            return self.res
-            
+        try:
+            with DDGS() as ddgs:
+                results = list(ddgs.text(self.query, max_results=self.n_results))
+                self.res = results
+                # for r in results:    
+                #     print(r['title'], r['href'])
+                return self.res
+        except Exception as e : 
+            print(e)
+
     
     def parse(self,res):
         self.soup = BeautifulSoup(res, "html.parser")
-        print(self.soup)
+        
         results = []
 
         for result in self.soup.select("div.MjjYud"):
@@ -76,7 +79,7 @@ class Search:
                 if description_tag
                 else ""
             )
-            print(description)
+          
 
             results.append({
                 "title": title,
@@ -120,6 +123,6 @@ if __name__=="__main__":
     res = gggl.google_ran()
     # print(res)
     parsed = gggl.parse(res=res)
-    print(parsed)
+    # print(parsed)
     # sg = Search(pry,1)
     # print(sg.ddg())

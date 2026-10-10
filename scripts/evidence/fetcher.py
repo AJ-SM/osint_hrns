@@ -15,16 +15,21 @@ class collect:
     def searcher(self):
         self.data = self.planner.paln(query=str(self.query))
         print("AI Response ------")
-        print(self.data)
         self.kw = self.data["research_tasks"][0]["keyword"]
+        print("Seraching For Keywords : ", self.kw)
+        self.hints = self.data["research_tasks"][0]["retrieval_hints"]
+        print("Query Limitation Setup : ",self.hints)
+   
+        
 
         for i in self.kw:
-            engine = self.search(self.query,5)
+            print("Seraching For Keywords : ",i)
+            engine = self.search(i,5)
             res = engine.ddg()
             for lk in res:
-                # print(f"Search Results :{i} =  ", lk['href'])
+                
                 self.href.append(lk['href'])
-        return self.href
+        return self.href,self.hints
 
 
 class fetch:

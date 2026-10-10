@@ -18,8 +18,10 @@ class Collected:
         self.tockenize()
         tockenized_q = self.query.lower().split()
         score = self.bm25.get_scores(tockenized_q)
-        print(score)
+       
         return score
+    
+ 
     
 
 
@@ -34,5 +36,5 @@ if __name__ == "__main__":
 
     query = "python machine learning"
     clt = Collected(doc=documents,query=query)
-    print(clt.find().argsort())
+    # print(clt.find().argsort())
 

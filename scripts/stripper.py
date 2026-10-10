@@ -9,9 +9,9 @@ def strip(link):
 
     res = requests.get(test_url, headers=headers)
 
-    print(res.status_code)
-    print(res.url)
-    print(res.text)
+    # print(res.status_code)
+    # print(res.url)
+    # print(res.text)
 
     soup = BeautifulSoup(res.text, "html.parser")
     article = soup.select_one("section.main")
