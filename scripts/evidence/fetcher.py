@@ -30,15 +30,13 @@ class collect:
 class fetch:
     def __init__(self,links:list,strip:callable=strip):
         self.link = links
-        self.results = ""
+        self.results = []
         self.strip = strip
         
     
     def information(self):
         for planLink in self.link:
-      
-            self.results += self.strip(link=planLink)
-            self.results+='\n'
+            self.results.append(str(self.strip(link=planLink)))
         return self.results
         
 

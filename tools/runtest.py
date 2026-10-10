@@ -9,4 +9,5 @@ collectr = collect(search=Search,planner=Planner,query=ip_query)
 res = collectr.searcher()
 ftch = fetch(strip=strip,links=res)
 results = ftch.information()
-print(results)
+for i in results:
+    print(i)
