@@ -17,7 +17,8 @@ clt = Collected(doc=results,query=hits[0])
 k= clt.find()
 # print(k)
 print(" FOUndd best matched Results ..... ")
-print(results[k.argmax()])
+# print(results[k.argmax()])
+print(k.argsort())
 
 # for i in results:
 #     ans+=i
