@@ -1,6 +1,6 @@
 from scripts.Engine_search import Search
 from scripts.planner import Planner
-
+from scripts.stripper import strip
 
 ## Get the seraching urls 
 
@@ -27,7 +27,20 @@ class collect:
         return self.href
 
 
-# class fetch:
-#     def __init__(self):
+class fetch:
+    def __init__(self,links:list,strip:callable=strip):
+        self.link = links
+        self.results = ""
+        self.strip = strip
+        
+    
+    def information(self):
+        for planLink in self.link:
+      
+            self.results += self.strip(link=planLink)
+            self.results+='\n'
+        return self.results
+        
+
 
 
