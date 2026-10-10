@@ -14,12 +14,15 @@ class collect:
 
     def searcher(self):
         self.data = self.planner.paln(query=str(self.query))
+        print("AI Response ------")
+        print(self.data)
         self.kw = self.data["research_tasks"][0]["keyword"]
+
         for i in self.kw:
             engine = self.search(self.query,5)
             res = engine.ddg()
             for lk in res:
-                print(f"Search Results :{i} =  ", lk['href'])
+                # print(f"Search Results :{i} =  ", lk['href'])
                 self.href.append(lk['href'])
         return self.href
 
