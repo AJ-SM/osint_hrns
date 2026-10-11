@@ -15,6 +15,8 @@ class collect:
     def searcher(self):
         self.data = self.planner.paln(query=str(self.query))
         print("AI Response ------")
+        # print(self.data["research_tasks"])
+        self.tasks=self.data["research_tasks"]
         self.kw = self.data["research_tasks"][0]["keyword"]
         print("Seraching For Keywords : ", self.kw)
         self.hints = self.data["research_tasks"][0]["retrieval_hints"]
@@ -29,7 +31,7 @@ class collect:
             for lk in res:
                 
                 self.href.append(lk['href'])
-        return self.href,self.hints
+        return self.href,self.hints,self.tasks
 
 
 class fetch:

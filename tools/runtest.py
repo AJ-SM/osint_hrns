@@ -9,12 +9,20 @@ from scripts.evidence.extractor import Evidence
 
 
 
+
+
+# V3 --- gr8 1 
+
 ip_query = input("Enter your target word : ")
 get = Evidence(querry=ip_query)
-print(get.ranState())
+get.ranState()
 
 
 
+
+
+
+# V2
 # collectr = collect(search=Search,planner=Planner,query=ip_query)
 # res,hits = collectr.searcher()
 # ftch = fetch(strip=strip,links=res)
@@ -26,7 +34,7 @@ print(get.ranState())
 
 
 
-
+# V1
 # for i in results:
 #     ans+=i
 #     ans+="------------------ --------------- --------- end search ----"

@@ -1,0 +1,3 @@
+- Also too doo 
+- taking 0 index hints 
+- and only condidering the task 0 for serach 
