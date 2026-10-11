@@ -45,8 +45,9 @@ class Search:
                 # for r in results:    
                 #     print(r['title'], r['href'])
                 return self.res
-        except Exception as e : 
-            print(e)
+        except Exception as e :
+            print(f"Search failed for {self.query!r}: {e}")
+            return []
 
     
     def parse(self,res):

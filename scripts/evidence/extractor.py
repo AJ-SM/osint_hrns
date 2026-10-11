@@ -1,76 +1,112 @@
+from dataclasses import dataclass
+from math import isfinite
+
 from scripts.Engine_search import Search
 from scripts.planner import Planner
 from scripts.evidence.fetcher import collect
 from scripts.stripper import strip
-from scripts.evidence.fetcher import fetch
 from scripts.evidence.collector import Collected
-from dataclasses import dataclass
 
 
 @dataclass
-class evidenceData:
+class EvidenceData:
     task_id: str
-    toVerify:str
-    url:str
-    title:str
-    passage:str
-    score:str
+    toVerify: str
+    url: str
+    title: str
+    passage: str
+    score: float
+    side: str
 
-# Response Format 
 
-''' 
+@dataclass
+class EvidenceBundle:
+    task_id: str
+    toVerify: str
+    supporting: list[EvidenceData]
+    opposing: list[EvidenceData]
 
-'''
 
 class Evidence:
-    def __init__(self,querry):
-        # self.evidence=evidenceData
-        self.collection = Collected
-        self.ftch = fetch
-        self.clt=collect
-        self.strip=strip
+    def __init__(self, querry: str):
         self.querry = querry
-        self.serach = Search
-        self.planner=Planner
-        self.resScore=[]
-        self.resSearch=[]
-    
-    def ranState(self):        
-        collectr = collect(search=Search,planner=Planner,query=self.querry)
-        res,hits,tasks = collectr.searcher()
-        ftch = fetch(strip=strip,links=res)
-        results = ftch.information()
-        self.resSearch=results
-        # We are only taking the hits @ 0 inddex 
+        self.resScore = []
+        self.resSearch = []
 
-        print("Only Seraching Forr : ", hits[0])
-        # We are only taking the task 1 we have to parse through it 
-        clt = Collected(doc=results,query=hits[0])
-        k = clt.find()
-        self.resScore= k
-        
-        tasks = tasks[0],
-        # This should goo in LOOP 
-        evad1 = evidenceData(
-            task_id=tasks[0]["id"],
-            toVerify=tasks[0]["claim_to_verify"],
-            url=res[k.argsort()[-1]],
-            title=tasks[0]["objective"],
-            passage=results[k.argsort()[-1]],
-            score=float(k[k.argsort()[-1]])
-        )
+    def ranState(self) -> list[EvidenceBundle]:
+        tasks = collect(
+            search=Search,
+            planner=Planner,
+            query=self.querry,
+        ).searcher()
 
-        print(evad1)
-        return evad1
+        bundles = []
+        self.resScore = []
+        self.resSearch = []
 
+        for task in tasks:
+            sides = {}
 
+            for side, plan in (
+                ("supporting", task.supporting_evidence_plan),
+                ("opposing", task.opposing_evidence_plan),
+            ):
+                urls = []
+                seen = set()
+                for query in plan.search_queries or task.keyword:
+                    for result in Search(query, 5).ddg() or []:
+                        url = result.get("href")
+                        if url and url not in seen:
+                            seen.add(url)
+                            urls.append(url)
 
+                documents = []
+                document_urls = []
+                for url in urls:
+                    passage = strip(link=url)
+                    if passage:
+                        document_urls.append(url)
+                        documents.append(passage)
 
-        # print(" FOUndd best matched Results ..... ")
-        # print( " Seraches args : " , k)
-        # print( " Seraches args : " , results)
-        
+                sides[side] = []
+                if not documents:
+                    continue
 
+                query = " ".join(plan.retrieval_hints) or task.claim_to_verify
+                scores = Collected(doc=documents, query=query).find()
+                numeric_scores = [float(score) for score in scores]
+                self.resSearch.extend(documents)
+                self.resScore.extend(numeric_scores)
 
+                ranked_indexes = sorted(
+                    range(len(documents)),
+                    key=lambda index: (
+                        numeric_scores[index]
+                        if isfinite(numeric_scores[index])
+                        else float("-inf")
+                    ),
+                    reverse=True,
+                )
 
+                for index in ranked_indexes[:5]:
+                    score = numeric_scores[index]
+                    if not isfinite(score):
+                        continue
+                    sides[side].append(EvidenceData(
+                        task_id=task.id,
+                        toVerify=task.claim_to_verify,
+                        url=document_urls[index],
+                        title=task.objective,
+                        passage=documents[index],
+                        score=score,
+                        side=side,
+                    ))
 
+            bundles.append(EvidenceBundle(
+                task_id=task.id,
+                toVerify=task.claim_to_verify,
+                supporting=sides["supporting"],
+                opposing=sides["opposing"],
+            ))
+
+        return bundles
