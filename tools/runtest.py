@@ -4,21 +4,28 @@ from scripts.evidence.fetcher import collect
 from scripts.stripper import strip
 from scripts.evidence.fetcher import fetch
 from scripts.evidence.collector import Collected
-ip_query = input("Enter your target word : ")
-collectr = collect(search=Search,planner=Planner,query=ip_query)
-res,hits = collectr.searcher()
-# print(hits)
-# print(res)
-ftch = fetch(strip=strip,links=res)
-results = ftch.information()
-ans=""
+from scripts.evidence.extractor import Evidence
 
-clt = Collected(doc=results,query=hits[0])
-k= clt.find()
-# print(k)
-print(" FOUndd best matched Results ..... ")
-# print(results[k.argmax()])
-print(k.argsort())
+
+
+
+ip_query = input("Enter your target word : ")
+get = Evidence(querry=ip_query)
+print(get.ranState())
+
+
+
+# collectr = collect(search=Search,planner=Planner,query=ip_query)
+# res,hits = collectr.searcher()
+# ftch = fetch(strip=strip,links=res)
+# results = ftch.information()
+# clt = Collected(doc=results,query=hits[0])
+# k= clt.find()
+# print(" FOUndd best matched Results ..... ")
+# print(k.argsort())
+
+
+
 
 # for i in results:
 #     ans+=i
