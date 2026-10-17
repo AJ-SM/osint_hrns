@@ -1,6 +1,34 @@
 
+from dataclasses import dataclass, field
+import json
+from openai import OpenAI
+import os
+from dotenv import load_dotenv
 
 
+load_dotenv()
+API_KEY = os.getenv("API_KEY")
+@dataclass
+class TrialResult:
+    trial_no: int
+    verdict: str
+    supporter_argument: str
+    opposition_argument: str
+    winning_side: str | None
+    reasoning: str
+    need_more_evidence: bool = False
+    research_gap: str | None = None
+
+
+@dataclass
+class CourtState:
+    claim: str
+
+    trials: list[TrialResult] = field(default_factory=list)
+
+    support_wins: int = 0
+    opposition_wins: int = 0
+    equal_trials: int = 0
 
 SYSTEM_PROMPT_Supporter = '''
 You are the SUPPORTER in an evidence-grounded adversarial verification court.
@@ -404,3 +432,105 @@ Do not request additional research merely to increase the number of sources.
 
 Before returning, verify that the verdict follows from the supplied evidence rather than from prior knowledge.
 '''
+
+class Court:
+    def __init__(self, client=None):
+        self.client = client or OpenAI(
+            base_url="https://api.aicredits.in/v1",
+            api_key=API_KEY,
+        )
+
+    def _ask(self, system_prompt: str, payload: dict) -> dict:
+        response = self.client.chat.completions.create(
+            model="openai/gpt-6-luna",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
+            ],
+        )
+        content = response.choices[0].message.content
+        if not content:
+            raise ValueError("Court model returned an empty response")
+        answer = json.loads(content)
+        if not isinstance(answer, dict):
+            raise ValueError("Court model must return a JSON object")
+        return answer
+
+    @staticmethod
+    def _evidence(items, prefix: str) -> list[dict]:
+        return [
+            {
+                "id": f"{prefix}{index}",
+                "url": item.url,
+                "title": item.title,
+                "passage": item.passage[:4000],
+            }
+            for index, item in enumerate(items, 1)
+        ]
+
+    def trial(self, bundle, no_of_trials: int, on_event=None, refresh_evidence=None) -> CourtState:
+        if no_of_trials < 1:
+            raise ValueError("Number of trials must be at least 1")
+
+        state = CourtState(claim=bundle.toVerify)
+        for trial_no in range(1, no_of_trials + 1):
+            if trial_no > 1:
+                if on_event:
+                    on_event("retrial", trial_no, None)
+                if refresh_evidence:
+                    if on_event:
+                        on_event("researching", trial_no, None)
+                    bundle = refresh_evidence(bundle)
+
+            supporting = self._evidence(bundle.supporting, "S")
+            opposing = self._evidence(bundle.opposing, "O")
+            if on_event:
+                on_event("court", trial_no, None)
+            supporter = self._ask(SYSTEM_PROMPT_Supporter, {
+                "claim": state.claim,
+                "supporting_evidence": supporting,
+            })
+            if on_event:
+                on_event("supporter", trial_no, supporter["argument"])
+            opposition = self._ask(SYSTEM_PROMPT_OPPOSITION_JUDGE, {
+                "claim": state.claim,
+                "opposing_evidence": opposing,
+            })
+            if on_event:
+                on_event("opposition", trial_no, opposition["argument"])
+                on_event("ruling", trial_no, None)
+            verdict = self._ask(SYSTEM_PROMPT, {
+                "claim": state.claim,
+                "supporting_evidence": supporting,
+                "opposing_evidence": opposing,
+                "supporter_argument": supporter,
+                "opposition_argument": opposition,
+                "previous_trials": [
+                    {"verdict": item.verdict, "reasoning": item.reasoning}
+                    for item in state.trials
+                ],
+            })
+
+            result = TrialResult(
+                trial_no=trial_no,
+                verdict=verdict["verdict"],
+                supporter_argument=supporter["argument"],
+                opposition_argument=opposition["argument"],
+                winning_side=("supporting" if verdict["verdict"] == "SUPPORTED"
+                              else "opposing" if verdict["verdict"] == "CONTRADICTED"
+                              else None),
+                reasoning=verdict["reasoning"],
+                need_more_evidence=verdict.get("continue_research", False),
+                research_gap=verdict.get("research_gap"),
+            )
+            state.trials.append(result)
+            if result.winning_side == "supporting":
+                state.support_wins += 1
+            elif result.winning_side == "opposing":
+                state.opposition_wins += 1
+            else:
+                state.equal_trials += 1
+            if on_event:
+                on_event("judge", trial_no, result)
+
+        return state

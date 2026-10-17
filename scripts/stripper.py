@@ -54,8 +54,7 @@ def strip(link):
             separator=" ",
             strip=True
         )
-    except requests.exceptions.Timeout:
-    
+    except requests.exceptions.Timeout as e:
         print(f" \033[91m[TIMEOUT]\033[0m  {link}: {e}")
 
     except requests.exceptions.RequestException as e:
