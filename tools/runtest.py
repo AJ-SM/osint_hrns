@@ -77,8 +77,15 @@ def main():
             on_event=print_court_event,
             refresh_evidence=lambda current: research.research_task(current.task),
         )
+        winning_side = {
+            "SUPPORTED": "supporting",
+            "CONTRADICTED": "opposing",
+        }.get(state.final_verdict, "no clear winner")
         print(
-            f"  Final verdict: {state.trials[-1].verdict}\n"
+            f"  Final verdict: {state.final_verdict}\n"
+            f"  Winning side: {winning_side}\n"
+            f"  Conclusion: {state.conclusion}\n"
+            f"  Trials run: {len(state.trials)}/{no_of_trials}\n"
             f"  Trial summary: supported={state.support_wins}, "
             f"contradicted={state.opposition_wins}, other={state.equal_trials}"
         )

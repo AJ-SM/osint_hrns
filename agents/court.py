@@ -25,6 +25,8 @@ class CourtState:
     claim: str
 
     trials: list[TrialResult] = field(default_factory=list)
+    final_verdict: str | None = None
+    conclusion: str | None = None
 
     support_wins: int = 0
     opposition_wins: int = 0
@@ -433,6 +435,26 @@ Do not request additional research merely to increase the number of sources.
 Before returning, verify that the verdict follows from the supplied evidence rather than from prior knowledge.
 '''
 
+FINAL_PROMPT = '''
+You are writing the final finding for a claim after all requested trials.
+Review the evidence from every trial and the trial rulings. Decide from the evidence,
+not by counting rulings or trusting an advocate's summary. Repeated copies of a source
+are one source, not independent confirmation. Use only facts established by the supplied
+passages. Preserve meaningful qualifications and uncertainty.
+
+Return ONLY a JSON object with these fields:
+{
+  "verdict": "SUPPORTED | CONTRADICTED | PARTIALLY_SUPPORTED | CONFLICTING_EVIDENCE | INSUFFICIENT_EVIDENCE",
+  "conclusion": "A concise, self-contained statement of the claim's actual factual outcome and the decisive facts. State the supported or contradicted proposition directly. Do not refer to trials, judges, advocates, evidence IDs, or a reasoning process. If the evidence does not establish a winner, explain what remains unresolved."
+}
+Do not invent facts to make the finding sound conclusive.
+'''
+
+VERDICTS = {
+    "SUPPORTED", "CONTRADICTED", "PARTIALLY_SUPPORTED",
+    "CONFLICTING_EVIDENCE", "INSUFFICIENT_EVIDENCE",
+}
+
 class Court:
     def __init__(self, client=None):
         self.client = client or OpenAI(
@@ -473,6 +495,7 @@ class Court:
             raise ValueError("Number of trials must be at least 1")
 
         state = CourtState(claim=bundle.toVerify)
+        all_evidence = []
         for trial_no in range(1, no_of_trials + 1):
             if trial_no > 1:
                 if on_event:
@@ -484,6 +507,11 @@ class Court:
 
             supporting = self._evidence(bundle.supporting, "S")
             opposing = self._evidence(bundle.opposing, "O")
+            all_evidence.append({
+                "trial_no": trial_no,
+                "supporting": supporting,
+                "opposing": opposing,
+            })
             if on_event:
                 on_event("court", trial_no, None)
             supporter = self._ask(SYSTEM_PROMPT_Supporter, {
@@ -532,5 +560,21 @@ class Court:
                 state.equal_trials += 1
             if on_event:
                 on_event("judge", trial_no, result)
+
+        final = self._ask(FINAL_PROMPT, {
+            "claim": state.claim,
+            "trial_evidence": all_evidence,
+            "trial_rulings": [
+                {"trial_no": item.trial_no, "verdict": item.verdict,
+                 "reasoning": item.reasoning}
+                for item in state.trials
+            ],
+        })
+        if final.get("verdict") not in VERDICTS:
+            raise ValueError("Final court model returned an invalid verdict")
+        if not isinstance(final.get("conclusion"), str) or not final["conclusion"].strip():
+            raise ValueError("Final court model returned an empty conclusion")
+        state.final_verdict = final["verdict"]
+        state.conclusion = final["conclusion"].strip()
 
         return state

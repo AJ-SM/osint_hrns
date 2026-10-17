@@ -44,9 +44,10 @@ class collect:
 
     def searcher(self):
         self.data = self.planner.paln(query=str(self.query))
-        print("AI Response ------")
-        # print(self.data["research_tasks"])
-        self.tasks=self.data["research_tasks"]
+        self.tasks = self.data["research_tasks"]
+        if not self.tasks:
+            raise ValueError("Planner returned no research task")
+        self.rest = []
         for elements in self.tasks:
             task = ResearchTask(
                 id=elements["id"],
@@ -73,7 +74,24 @@ class collect:
             self.rest.append(task)
 
 
-        return self.rest
+        primary = self.rest[0]
+        primary.id = "task_001"
+        primary.objective = self.query
+        primary.claim_to_verify = self.query
+        primary.dependencies = []
+        for extra in self.rest[1:]:
+            for name in ("keyword", "preferred_sources"):
+                values = getattr(primary, name)
+                values.extend(value for value in getattr(extra, name) if value not in values)
+            for side in ("supporting_evidence_plan", "opposing_evidence_plan"):
+                base_plan = getattr(primary, side)
+                extra_plan = getattr(extra, side)
+                for name in ("search_queries", "retrieval_hints"):
+                    values = getattr(base_plan, name)
+                    values.extend(value for value in getattr(extra_plan, name) if value not in values)
+            primary.requires_independent_verification |= extra.requires_independent_verification
+            primary.requires_primary_source |= extra.requires_primary_source
+        return [primary]
 
 
 class fetch:
